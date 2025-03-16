@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vegetable Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Vegetable Shop Inventory</h1>
+    <div class="container">
+        <div class="input-group">
+            <input type="text" id="vegName" placeholder="Vegetable Name" />
+            <input type="number" id="vegPrice" placeholder="Price per kg" />
+            <input type="number" id="vegQty" placeholder="Quantity (kg)" />
+            <button onclick="addVegetable()">Add Vegetable</button>
+        </div>
+        <div class="count-display">Total Vegetables: <span id="vegCount">0</span></div>
+        <div class="veg-list" id="vegList"></div>
+        <script src="script.js"></script>
+    </div>
+</body>
+
+</html>

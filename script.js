@@ -1,7 +1,7 @@
 const vegetables = {};
 const API_URL = 'https://crudcrud.com/api/4ebf57eeb0d7424bbbd2f12c10f8ff39/vegetables';
 
-async function addVegetable() {
+function addVegetable() {
     const name = document.getElementById('vegName').value.trim().toLowerCase();
     const price = parseFloat(document.getElementById('vegPrice').value);
     const qty = parseFloat(document.getElementById('vegQty').value);
@@ -11,54 +11,53 @@ async function addVegetable() {
     if (vegetables[name]) {
         vegetables[name].quantity += qty;
         vegetables[name].price = price;
-        await updateVegetableOnServer(name);
+        updateVegetableOnServer(name).then(renderList);
     } else {
         const newVeg = { name, price, quantity: qty };
-        await saveVegetableToServer(newVeg);
+        saveVegetableToServer(newVeg).then(renderList);
     }
 
-    renderList();
     document.getElementById('vegName').value = '';
     document.getElementById('vegPrice').value = '';
     document.getElementById('vegQty').value = '';
 }
 
-async function saveVegetableToServer(veg) {
-    const res = await fetch(API_URL, {
+function saveVegetableToServer(veg) {
+    return fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(veg)
+    })
+    .then(res => res.json())
+    .then(data => {
+        veg.id = data._id || data.id;
+        vegetables[veg.name] = veg;
     });
-
-    const data = await res.json();
-    veg.id = data._id || data.id;
-    vegetables[veg.name] = veg;
 }
 
-async function updateVegetableOnServer(name) {
+function updateVegetableOnServer(name) {
     const veg = vegetables[name];
-    if (!veg.id) return console.error('No ID for update');
+    if (!veg.id) return Promise.reject('No ID for update');
 
-    await fetch(`${API_URL}/${veg.id}`, {
+    return fetch(`${API_URL}/${veg.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(veg)
     });
 }
 
-async function deleteVeg(name) {
+function deleteVeg(name) {
     const veg = vegetables[name];
     if (!veg.id) return console.error('No ID for delete');
 
-    await fetch(`${API_URL}/${veg.id}`, {
-        method: 'DELETE'
-    });
-
-    delete vegetables[name];
-    renderList();
+    fetch(`${API_URL}/${veg.id}`, { method: 'DELETE' })
+        .then(() => {
+            delete vegetables[name];
+            renderList();
+        });
 }
 
-async function buyVeg(name, btn) {
+function buyVeg(name, btn) {
     const input = btn.previousElementSibling;
     const buyQty = parseFloat(input.value);
     if (isNaN(buyQty) || buyQty <= 0) return alert("Enter a valid quantity");
@@ -68,12 +67,27 @@ async function buyVeg(name, btn) {
     vegetables[name].quantity -= buyQty;
 
     if (vegetables[name].quantity === 0) {
-        await deleteVeg(name);
+        deleteVeg(name).then(renderList);
     } else {
-        await updateVegetableOnServer(name);
+        updateVegetableOnServer(name).then(renderList);
     }
+}
 
-    renderList();
+function fetchVegetables() {
+    fetch(API_URL)
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(veg => {
+                vegetables[veg.name] = {
+                    id: veg._id || veg.id,
+                    name: veg.name,
+                    price: veg.price,
+                    quantity: veg.quantity
+                };
+            });
+            renderList();
+        })
+        .catch(err => console.error("Failed to fetch vegetables from API:", err));
 }
 
 function renderList() {
@@ -100,26 +114,6 @@ function renderList() {
     });
 
     document.getElementById('vegCount').innerText = Object.keys(vegetables).length;
-}
-
-async function fetchVegetables() {
-    try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-
-        data.forEach(veg => {
-            vegetables[veg.name] = {
-                id: veg._id || veg.id,
-                name: veg.name,
-                price: veg.price,
-                quantity: veg.quantity
-            };
-        });
-
-        renderList();
-    } catch (err) {
-        console.error("Failed to fetch vegetables from API:", err);
-    }
 }
 
 window.onload = fetchVegetables;
